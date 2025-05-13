@@ -6,6 +6,9 @@
 #include "esp_log.h"
 #include <stdlib.h>
 
+#include "servo.h"
+
+
 #define I2C_MASTER_SCL_IO 22       // SCL
 #define I2C_MASTER_SDA_IO 21       // SDA
 #define I2C_MASTER_NUM I2C_NUM_0
@@ -31,10 +34,10 @@
 
 static const char *TAG = "BallControl";
 
-// Omvandlar pulsbredd i µs till duty cycle (16-bit)
-static uint32_t pulse_to_duty(int pulse_width) {
-    return (pulse_width * (1 << 16)) / 20000;
-}
+//initiera servo
+servo_init();
+
+
 
 // Skriver ett byte till ett register hos MPU9250
 esp_err_t mpu9250_write_byte(uint8_t reg, uint8_t data) {
@@ -81,11 +84,6 @@ int16_t read_accel_x() {
     return (int16_t)((data[0] << 8) | data[1]);
 }
 
-// Ställer in servots position genom att ange pulsbredd
-void set_servo_position(int pulse_width) {
-    ledc_set_duty(LEDC_MODE, LEDC_CHANNEL, pulse_to_duty(pulse_width));
-    ledc_update_duty(LEDC_MODE, LEDC_CHANNEL);
-}
 
 void app_main(void) {
     ESP_LOGI(TAG, "Initierar I2C...");
@@ -101,26 +99,6 @@ void app_main(void) {
     i2c_driver_install(I2C_MASTER_NUM, conf.mode, 0, 0, 0);
 
     mpu9250_init();
-
-    ESP_LOGI(TAG, "Initierar Servo...");
-    ledc_timer_config_t timer_conf = {
-        .speed_mode = LEDC_MODE,
-        .duty_resolution = LEDC_RESOLUTION,
-        .timer_num = LEDC_TIMER,
-        .freq_hz = LEDC_FREQ_HZ,
-        .clk_cfg = LEDC_AUTO_CLK
-    };
-    ledc_timer_config(&timer_conf);
-
-    ledc_channel_config_t channel_conf = {
-        .gpio_num = SERVO_GPIO,
-        .speed_mode = LEDC_MODE,
-        .channel = LEDC_CHANNEL,
-        .timer_sel = LEDC_TIMER,
-        .duty = 0,
-        .hpoint = 0
-    };
-    ledc_channel_config(&channel_conf);
 
     //baselinevärde
     int16_t baseline = read_accel_x();
@@ -157,82 +135,3 @@ void app_main(void) {
     }
 }
 
-// #include <stdio.h>
-// #include "freertos/FreeRTOS.h"
-// #include "freertos/task.h"
-// #include "driver/ledc.h"
-// #include "esp_log.h"
-
-// #define SERVO_GPIO      4                   // GPIO för servot
-// #define LEDC_TIMER      LEDC_TIMER_0
-// #define LEDC_MODE       LEDC_LOW_SPEED_MODE
-// #define LEDC_CHANNEL    LEDC_CHANNEL_0
-// #define LEDC_FREQ_HZ    50                  // Standard 50 Hz för servon
-// #define LEDC_RESOLUTION LEDC_TIMER_16_BIT
-
-// // Pulsvärden i mikrosekunder (µs)
-// // OBS! Dessa kan behöva kalibreras för din servomotor.
-// #define SERVO_STOP      1500    // Neutral position (stopp)
-// #define SERVO_FORWARD   2000    // Roterar i en riktning
-// #define SERVO_REVERSE   1000    // Roterar i motsatt riktning
-
-// static const char *TAG = "ServoTest";
-
-// // Omvandlar en pulsbredd (µs) till en duty cycle för LEDC (16-bit)
-// static uint32_t pulse_to_duty(int pulse_width) {
-//     return (pulse_width * (1 << 16)) / 20000;
-// }
-
-// // Ställer in servots position genom att uppdatera PWM-signalen
-// void set_servo_position(int pulse_width) {
-//     ledc_set_duty(LEDC_MODE, LEDC_CHANNEL, pulse_to_duty(pulse_width));
-//     ledc_update_duty(LEDC_MODE, LEDC_CHANNEL);
-// }
-
-// void app_main(void) {
-//     ESP_LOGI(TAG, "Initierar Servo...");
-
-//     // Konfigurera LEDC-timer för PWM
-//     ledc_timer_config_t timer_conf = {
-//         .speed_mode = LEDC_MODE,
-//         .duty_resolution = LEDC_RESOLUTION,
-//         .timer_num = LEDC_TIMER,
-//         .freq_hz = LEDC_FREQ_HZ,
-//         .clk_cfg = LEDC_AUTO_CLK
-//     };
-//     ledc_timer_config(&timer_conf);
-
-//     // Konfigurera LEDC-kanal som styr servot
-//     ledc_channel_config_t channel_conf = {
-//         .gpio_num = SERVO_GPIO,
-//         .speed_mode = LEDC_MODE,
-//         .channel = LEDC_CHANNEL,
-//         .timer_sel = LEDC_TIMER,
-//         .duty = 0,
-//         .hpoint = 0
-//     };
-//     ledc_channel_config(&channel_conf);
-
-//     // Testar servomotorns rotation genom att cykla mellan olika lägen
-//     while (1) {
-//         // Rotera i en riktning (t.ex. medurs)
-//         ESP_LOGI(TAG, "Roterar framåt...");
-//         set_servo_position(SERVO_FORWARD);
-//         vTaskDelay(pdMS_TO_TICKS(5000));  // Låt motorn snurra i 5 sekunder
-
-//         // Stoppa servot
-//         ESP_LOGI(TAG, "Stoppar servo...");
-//         set_servo_position(SERVO_STOP);
-//         vTaskDelay(pdMS_TO_TICKS(2000));  // Stanna i 2 sekunder
-
-//         // Rotera i motsatt riktning (t.ex. moturs)
-//         ESP_LOGI(TAG, "Roterar bakåt...");
-//         set_servo_position(SERVO_REVERSE);
-//         vTaskDelay(pdMS_TO_TICKS(5000));  // Låt motorn snurra i 5 sekunder
-
-//         // Stoppa servot igen
-//         ESP_LOGI(TAG, "Stoppar servo...");
-//         set_servo_position(SERVO_STOP);
-//         vTaskDelay(pdMS_TO_TICKS(2000));  // Stanna i 2 sekunder
-//     }
-// }
