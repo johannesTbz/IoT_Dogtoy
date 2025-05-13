@@ -1,3 +1,16 @@
+#include "servo.h"
+#include "driver/ledc.h"
+#include "esp_log.h"
+
+#define SERVO_GPIO 4
+#define LEDC_TIMER LEDC_TIMER_0
+#define LEDC_MODE LEDC_LOW_SPEED_MODE
+#define LEDC_CHANNEL LEDC_CHANNEL_0
+#define LEDC_FREQ_HZ 50
+#define LEDC_RESOLUTION LEDC_TIMER_16_BIT
+
+static const char *TAG = "Servo";
+
 static uint32_t pulse_to_duty(int pulse_width) {
     return (pulse_width * (1 << 16)) / 20000;
 }
@@ -5,13 +18,6 @@ static uint32_t pulse_to_duty(int pulse_width) {
 void set_servo_position(int pulse_width) {
     ledc_set_duty(LEDC_MODE, LEDC_CHANNEL, pulse_to_duty(pulse_width));
     ledc_update_duty(LEDC_MODE, LEDC_CHANNEL);
-}
-
-void servo_init(void) {
-    ledc_timer_config_t timer_conf = { ... }
-    ledc_channel_config_t channel_conf = { ... }
-    ledc_timer_config(&timer_conf);
-    ledc_channel_config(&channel_conf);
 }
 
 void servo_init(void) {

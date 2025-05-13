@@ -1,3 +1,19 @@
+#include "mpu9250.h"
+#include "driver/i2c.h"
+#include "esp_log.h"
+
+#define TAG "MPU9250"
+
+#define I2C_MASTER_SCL_IO 22
+#define I2C_MASTER_SDA_IO 21
+#define I2C_MASTER_NUM I2C_NUM_0
+#define I2C_MASTER_FREQ_HZ 100000
+
+#define MPU9250_ADDR 0x68
+#define WHO_AM_I_REG 0x75
+#define PWR_MGMT_1 0x6B
+#define ACCEL_XOUT_H 0x3B
+
 // Skriver ett byte till ett register hos MPU9250
 static esp_err_t mpu9250_write_byte(uint8_t reg, uint8_t data) {
     i2c_cmd_handle_t cmd = i2c_cmd_link_create();

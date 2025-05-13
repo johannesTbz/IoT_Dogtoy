@@ -2,31 +2,10 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/i2c.h"
-#include "driver/ledc.h"
 #include "esp_log.h"
 #include <stdlib.h>
-
 #include "servo.h"
 #include "mpu9250.h"
-
-
-
-#define I2C_MASTER_SCL_IO 22       // SCL
-#define I2C_MASTER_SDA_IO 21       // SDA
-#define I2C_MASTER_NUM I2C_NUM_0
-#define I2C_MASTER_FREQ_HZ 100000  // 100 kHz
-
-#define MPU9250_ADDR 0x68          // I2C-adress för MPU-9250
-#define WHO_AM_I_REG 0x75
-#define PWR_MGMT_1 0x6B
-#define ACCEL_XOUT_H 0x3B
-
-#define SERVO_GPIO 4
-#define LEDC_TIMER LEDC_TIMER_0
-#define LEDC_MODE LEDC_LOW_SPEED_MODE
-#define LEDC_CHANNEL LEDC_CHANNEL_0
-#define LEDC_FREQ_HZ 50
-#define LEDC_RESOLUTION LEDC_TIMER_16_BIT
 
 #define SERVO_STOP 1500            // Neutral position
 #define SERVO_FORWARD 2000         // Aktiverad motor
@@ -34,19 +13,13 @@
 #define MOTOR_RUN_DURATION_MS 2000 //Hur länge motorn ska vara på
 #define BASELINE_DELAY_MS 3000     // Fördröjning efter att motorn stoppats innan baseline uppdateras
 
+#define I2C_MASTER_SCL_IO 22
+#define I2C_MASTER_SDA_IO 21
+#define I2C_MASTER_NUM I2C_NUM_0
+#define I2C_MASTER_FREQ_HZ 100000
+
+
 static const char *TAG = "BallControl";
-
-//initiera servo
-servo_init();
-
-//initiera accelerometer
-mpu9250_init();
-
-read_accel_x();
-
-
-
-
 
 void app_main(void) {
     ESP_LOGI(TAG, "Initierar I2C...");
@@ -62,6 +35,8 @@ void app_main(void) {
     i2c_driver_install(I2C_MASTER_NUM, conf.mode, 0, 0, 0);
 
     mpu9250_init();
+
+    servo_init();
 
     //baselinevärde
     int16_t baseline = read_accel_x();
